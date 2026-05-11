@@ -10,7 +10,14 @@ const usersRouter = require("./routes/users");
 const { startOverdueCron } = require("./jobs/overdueNotifier");
 
 const app = express();
-app.use(cors());
+
+// FIXED: CORS configuration to allow your Vercel frontend
+app.use(cors({
+  origin: 'https://fsd-mern-phi.vercel.app', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use("/api/overdue", overdueRouter);
@@ -105,9 +112,6 @@ async function bootstrapDatabase() {
       ) THEN
         ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
       END IF;
-    EXCEPTION
-      WHEN duplicate_table THEN NULL;
-      WHEN duplicate_object THEN NULL;
     END$$;
   `);
 
@@ -181,8 +185,9 @@ async function bootstrapDatabase() {
 const PORT = process.env.PORT || 5000;
 bootstrapDatabase()
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    // FIXED: Render requires listening on 0.0.0.0 for external access
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${PORT}`);
       startOverdueCron();
     });
   })
